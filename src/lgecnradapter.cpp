@@ -123,8 +123,22 @@ gboolean LgEcnrAdapter::PushMicBuffer(GstBuffer *buffer) {
     return TRUE;
 }
 
+/* process_first_buffer:
+ * Remove zero data at the buffer beginning
+ */
+static gboolean process_first_buffer(GstBuffer *buffer) {
+
+}
+
 gboolean LgEcnrAdapter::PushRecvBuffer(GstBuffer *buffer) {
     RECVIN_LOCK();
+    if (GST_BUFFER_FLAG_SET (buffer, GST_BUFFER_FLAG_DISCONT)) {
+        gst_adapter_clear(m_RecvInAdapter);
+        RECVOUT_LOCK();
+        gst_adapter_clear(m_RecvOutAdapter);
+        RECVOUT_UNLOCK();
+        m_InitialRecvPts = GST_BUFFER_PTS(buffer);
+    }
     gst_adapter_push (m_RecvInAdapter, buffer);
     RECVIN_UNLOCK();
 
@@ -134,11 +148,18 @@ gboolean LgEcnrAdapter::PushRecvBuffer(GstBuffer *buffer) {
 static gssize adapter_available (GstAdapter *adapter, GstClockTime from) {
     GstClockTime adapter_pts;
     guint64 distance;
+    guint64 diff_size = 0;
+    gssize avail;
 
     adapter_pts = gst_adapter_prev_pts (adapter, &distance);
-    if (GST_CLOCK_TIME_IS_VALID (adpater_pts)) {
+    adapter_pts += gst_util_uint64_scale_int(distance / m_bpf, GST_SECOND, m_rate);
 
+    if (adapter_pts < from) {
+        GstClockTimeDiff diff = from - adapter_pts;
+        diff_size = diff * m_bpf;
     }
+    avail = gst_adapter_available - diff_size;
+    return avail > 0 ? avail : 0;
 }
 static gboolean fill_memory_from_adapter (GstClockTime time, GstAdapter *adapter, gchar *memory, guint *skip, gssize *size) {
     GstClockTime adapter_pts;

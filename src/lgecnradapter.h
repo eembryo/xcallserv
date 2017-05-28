@@ -46,14 +46,18 @@ private:
     //GstClockTime    m_MicStreamBaseTime;    //absolute time
     //GstClockTime    m_RecvStreamBaseTime;   //absolute time
     GstClockTime    m_PrevRefTime;              //absolute time
-    //GstClockTime    m_InitialMicPts;
-    //GstClockTime    m_InitialRecvPts;
+    GstClockTime    m_InitialMicPts;
+    GstClockTime    m_InitialRecvPts;
     GstClockTime    m_RecvStreamLatency;
     GstClockTime    m_RecvStreamDelay;
     guint           m_PeriodSize;
     GstClockTime    m_PeriodTime;
     GstClockTime    m_RecvStreamLatency;
     GstClockTime    m_RecvStreamDelay;
+    // stream info
+    gint            m_rate;
+    gint            m_channels;
+    gint            m_bpf;
 };
 
 
